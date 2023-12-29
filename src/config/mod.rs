@@ -24,7 +24,7 @@ pub fn load() -> Result<ManGPTConfig, Box<dyn std::error::Error>> {
     let content = fs::read_to_string(config_file_path)?;
     let config: ManGPTConfig = serde_yaml::from_str(&content)?;
 
-    return Ok(config);
+    Ok(config)
 }
 
 fn create_config_file(
@@ -33,7 +33,7 @@ fn create_config_file(
     let api_key = rpassword::prompt_password("Please Enter your OpenAI API-Key: ")?;
 
     let config = ManGPTConfig {
-        api_key: api_key,
+        api_key,
         model: DEFAULT_MODEL.to_string(),
         max_tokens: DEFAULT_MAX_TOKENS,
     };
@@ -42,5 +42,5 @@ fn create_config_file(
     fs::write(config_file_path, config)?;
     println!("Written config file {}", config_file_path.display());
 
-    return Ok(());
+    Ok(())
 }
