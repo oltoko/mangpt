@@ -23,7 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tool = tool::find_for(&args.name)?;
 
     let question = match args.question {
-        Some(parsed_question) => String::from(parsed_question),
+        Some(parsed_question) => parsed_question,
         None => String::from("Give me a quick summary about this tool."),
     };
 
