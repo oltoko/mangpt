@@ -72,23 +72,26 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Build
+      shell: bash
       run: |
         cargo build --release --verbose
 
     - name: Determine binary name (Windows)
+      shell: bash
       if: matrix.os == 'windows-latest'
       run: |
-        ls ./target/release/
-        $bin="target/release/mangpt.exe"
+        bin="target/release/mangpt.exe"
         echo "BIN=$bin" >> $GITHUB_ENV
 
     - name: Determine binary name (Unix)
+      shell: bash
       if: matrix.os != 'windows-latest'
       run: |
         bin="target/release/mangpt"
         echo "BIN=$bin" >> $GITHUB_ENV
 
     - name: Strip release binary (macOS or Linux)
+      shell: bash
       if: matrix.os != 'windows-latest'
       run: |
         strip "$BIN"
