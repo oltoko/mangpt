@@ -60,7 +60,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
           - build: macos
-            os: macos-13-xlarge
+            os: macos-latest
             rust: stable
           - build: windows
             os: windows-latest
