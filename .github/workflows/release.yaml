@@ -17,8 +17,8 @@ on:
 
 jobs:
 
-  create-github-release:
-    name: create-release
+  create-release:
+    name: Create Release
     runs-on: ubuntu-latest
     steps:
 
@@ -50,7 +50,7 @@ jobs:
 
   build-release:
     name: Build Release
-    needs: [create-github-release]
+    needs: [create-release]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
