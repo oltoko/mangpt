@@ -96,7 +96,7 @@ jobs:
       shell: bash
       run: |
         version="${{ needs.create-release.outputs.version }}"
-        echo "ARCHIVE=mangpt_$version_${{ matrix.build }}" >> $GITHUB_ENV
+        echo "ARCHIVE=mangpt-$version-${{ matrix.build }}" >> $GITHUB_ENV
 
     - name: Creating directory for archive
       shell: bash
@@ -113,16 +113,6 @@ jobs:
         certutil -hashfile "$ARCHIVE.zip" SHA256 > "$ARCHIVE.zip.sha256"
         echo "ASSET=$ARCHIVE.zip" >> $GITHUB_ENV
         echo "ASSET_SUM=$ARCHIVE.zip.sha256" >> $GITHUB_ENV
-
-    - name: Bundle release (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: bash
-      run: |
-        cp target/release/mangpt.exe mangpt.exe
-        7z a mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip "mangpt.exe"
-        7z a mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip "README.md"
-        7z a mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip "LICENSE"
-        echo "ASSET=mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip" >> $GITHUB_ENV
 
     - name: Build archive (Unix)
       shell: bash
