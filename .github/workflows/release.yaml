@@ -78,6 +78,7 @@ jobs:
     - name: Determine binary name (Windows)
       if: matrix.os == 'windows-latest'
       run: |
+        ls ./target/release/
         bin="target/release/mangpt.exe"
         echo "BIN=$bin" >> $GITHUB_ENV
 
