@@ -56,7 +56,7 @@ jobs:
         run: echo "${{ env.VERSION }}" > artifacts/release-version
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: artifacts
           path: artifacts
@@ -73,7 +73,7 @@ jobs:
             os: ubuntu-latest
             rust: stable
           - build: macos
-            os: macos-latest
+            os: macos-13-xlarge
             rust: stable
           - build: windows
             os: windows-latest
@@ -82,17 +82,10 @@ jobs:
     steps:
 
     - name: Checkout Code
-      uses: actions/checkout@v1
-
-    - name: Setup Rust Toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
+      uses: actions/checkout@v4
 
     - name: Get release download URL
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         name: artifacts
         path: artifacts
@@ -110,38 +103,31 @@ jobs:
         echo "Release upload url: ${{ env.RELEASE_UPLOAD_URL }}"
         echo "Release version: ${{ env.RELEASE_VERSION }}"
 
-    - name: Install Build Dependencies (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: "sudo apt -y install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev"
-
     - name: Build
-      uses: actions-rs/cargo@v1
-      with:
-        command: build
-        args: --release --verbose
+      run: cargo build --release --verbose
 
     - name: Strip release binary (macOS or Linux)
       if: matrix.os != 'windows-latest'
       run: |
-        strip target/release/pc
+        strip target/release/mangpt
 
     - name: Bundle release (Windows)
       if: matrix.os == 'windows-latest'
       shell: bash
       run: |
-        cp target/release/pc.exe pc.exe
-        7z a pc_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip "pc.exe"
-        7z a pc_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip "README.md"
-        7z a pc_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip "LICENSE"
-        echo "ASSET=pc_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip" >> $GITHUB_ENV
+        cp target/release/mangpt.exe mangpt.exe
+        7z a mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip "mangpt.exe"
+        7z a mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip "README.md"
+        7z a mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip "LICENSE"
+        echo "ASSET=mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip" >> $GITHUB_ENV
 
     - name: Bundle release (Linux and macOS)
       if: matrix.os != 'windows-latest'
       shell: bash
       run: |
-        cp target/release/pc ./pc
-        tar -czvf pc_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.tar.gz pc README.md LICENSE
-        echo "ASSET=pc_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.tar.gz" >> $GITHUB_ENV
+        cp target/release/mangpt ./mangpt
+        tar -czvf mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.tar.gz mangpt README.md LICENSE
+        echo "ASSET=mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.tar.gz" >> $GITHUB_ENV
 
     - name: Upload main release
       uses: actions/upload-release-asset@v1.0.1
@@ -157,9 +143,9 @@ jobs:
     - name: Build Debian release (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        cargo install cargo-deb --version 1.30.0 --locked
+        cargo install cargo-deb --version 2.0.2 --locked
         cargo deb
-        cp ./target/debian/pc_*.deb ./pc_${{ env.RELEASE_VERSION }}_amd64.deb
+        cp ./target/debian/mangpt_*.deb ./mangpt_${{ env.RELEASE_VERSION }}_amd64.deb
 
     - name: Upload Debian file (Linux)
       if: matrix.os == 'ubuntu-latest'
@@ -168,6 +154,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ env.RELEASE_UPLOAD_URL }}
-        asset_path: pc_${{ env.RELEASE_VERSION }}_amd64.deb
-        asset_name: pc_${{ env.RELEASE_VERSION }}_amd64.deb
+        asset_path: mangpt_${{ env.RELEASE_VERSION }}_amd64.deb
+        asset_name: mangpt_${{ env.RELEASE_VERSION }}_amd64.deb
         asset_content_type: application/octet-stream
