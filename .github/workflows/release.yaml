@@ -1,7 +1,7 @@
 # Creates a Release
 #
 # Based on:
-# https://github.com/ClementTsang/bottom/blob/master/.github/workflows/deployment.yml
+# https://github.com/BurntSushi/ripgrep/blob/master/.github/workflows/release.yml
 
 name: Create Release
 
@@ -18,48 +18,35 @@ on:
 jobs:
 
   create-github-release:
-    name: Create GitHub Release
+    name: create-release
     runs-on: ubuntu-latest
     steps:
 
-      - name: Create artifacts directory
-        run: mkdir artifacts
+      - uses: actions/checkout@v4
 
       - name: Get the release version from the tag
         if: env.VERSION == ''
+        run: echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Show the version
         run: |
-          if [[ -n "${{ github.event.inputs.tag }}" ]]; then
-            echo "Manual run against a tag; overriding actual tag in the environment..."
-            echo "VERSION=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
-          else
-            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "version is: $VERSION"
+
+      - name: Check that tag version and Cargo.toml version are the same
+        shell: bash
+        run: |
+          if ! grep -q "version = \"$VERSION\"" Cargo.toml; then
+            echo "version does not match Cargo.toml" >&2
+            exit 1
           fi
 
-      - name: Validate version environment variable
-        run: |
-          echo "Version being built against is version ${{ env.VERSION }}"!
-
       - name: Create GitHub release
-        id: release
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          draft: true
-          tag_name: ${{ env.VERSION }}
-          release_name: ${{ env.VERSION }} Release
+        run: gh release create $VERSION --draft --verify-tag --title $VERSION
 
-      - name: Save release upload URL to artifact
-        run: echo "${{ steps.release.outputs.upload_url }}" > artifacts/release-upload-url
-
-      - name: Save version number to artifact
-        run: echo "${{ env.VERSION }}" > artifacts/release-version
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: artifacts
-          path: artifacts
+    outputs:
+      version: ${{ env.VERSION }}
 
   build-release:
     name: Build Release
@@ -84,32 +71,42 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Get release download URL
-      uses: actions/download-artifact@v4
-      with:
-        name: artifacts
-        path: artifacts
-    
-    - name: Set release upload URL and release version
-      shell: bash
-      run: |
-        release_upload_url="$(cat ./artifacts/release-upload-url)"
-        echo "RELEASE_UPLOAD_URL=$release_upload_url" >> $GITHUB_ENV
-        release_version="$(cat ./artifacts/release-version)"
-        echo "RELEASE_VERSION=$release_version" >> $GITHUB_ENV
-
-    - name: Validate release environment variables
-      run: |
-        echo "Release upload url: ${{ env.RELEASE_UPLOAD_URL }}"
-        echo "Release version: ${{ env.RELEASE_VERSION }}"
-
     - name: Build
-      run: cargo build --release --verbose
+      run: |
+        cargo build --release --verbose
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          bin="target/release/mangpt.exe"
+        else
+          bin="target/release/mangpt"
+        fi
+        echo "BIN=$bin" >> $GITHUB_ENV
 
     - name: Strip release binary (macOS or Linux)
       if: matrix.os != 'windows-latest'
       run: |
-        strip target/release/mangpt
+        strip "$BIN"
+
+    - name: Determine archive name
+      shell: bash
+      run: |
+        version="${{ needs.create-release.outputs.version }}"
+        echo "ARCHIVE=mangpt_$version_${{ matrix.build }}" >> $GITHUB_ENV
+
+    - name: Creating directory for archive
+      shell: bash
+      run: |
+        mkdir -p "$ARCHIVE"/
+        cp "$BIN" "$ARCHIVE"/
+        cp {README.md,LICENSE} "$ARCHIVE"/
+
+    - name: Build archive (Windows)
+      shell: bash
+      if: matrix.os == 'windows-latest'
+      run: |
+        7z a "$ARCHIVE.zip" "$ARCHIVE"
+        certutil -hashfile "$ARCHIVE.zip" SHA256 > "$ARCHIVE.zip.sha256"
+        echo "ASSET=$ARCHIVE.zip" >> $GITHUB_ENV
+        echo "ASSET_SUM=$ARCHIVE.zip.sha256" >> $GITHUB_ENV
 
     - name: Bundle release (Windows)
       if: matrix.os == 'windows-latest'
@@ -121,39 +118,19 @@ jobs:
         7z a mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip "LICENSE"
         echo "ASSET=mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.zip" >> $GITHUB_ENV
 
-    - name: Bundle release (Linux and macOS)
+    - name: Build archive (Unix)
+      shell: bash
       if: matrix.os != 'windows-latest'
+      run: |
+        tar czf "$ARCHIVE.tar.gz" "$ARCHIVE"
+        shasum -a 256 "$ARCHIVE.tar.gz" > "$ARCHIVE.tar.gz.sha256"
+        echo "ASSET=$ARCHIVE.tar.gz" >> $GITHUB_ENV
+        echo "ASSET_SUM=$ARCHIVE.tar.gz.sha256" >> $GITHUB_ENV
+
+    - name: Upload release archive
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: bash
       run: |
-        cp target/release/mangpt ./mangpt
-        tar -czvf mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.tar.gz mangpt README.md LICENSE
-        echo "ASSET=mangpt_${{ env.RELEASE_VERSION }}_${{ matrix.build }}.tar.gz" >> $GITHUB_ENV
-
-    - name: Upload main release
-      uses: actions/upload-release-asset@v1.0.1
-      id: upload
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ env.RELEASE_UPLOAD_URL }}
-        asset_path: ${{ env.ASSET }}
-        asset_name: ${{ env.ASSET }}
-        asset_content_type: application/octet-stream
-
-    - name: Build Debian release (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        cargo install cargo-deb --version 2.0.2 --locked
-        cargo deb
-        cp ./target/debian/mangpt_*.deb ./mangpt_${{ env.RELEASE_VERSION }}_amd64.deb
-
-    - name: Upload Debian file (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ env.RELEASE_UPLOAD_URL }}
-        asset_path: mangpt_${{ env.RELEASE_VERSION }}_amd64.deb
-        asset_name: mangpt_${{ env.RELEASE_VERSION }}_amd64.deb
-        asset_content_type: application/octet-stream
+        version="${{ needs.create-release.outputs.version }}"
+        gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}

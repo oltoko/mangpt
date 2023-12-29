@@ -1,6 +1,7 @@
 [package]
 name = "mangpt"
 authors = ["Oliver Koch <oltoko@gmail.com>"]
+homepage = "https://github.com/oltoko/mangpt"
 description = "CLI program to ask ChatGPT how to use other CLI programs"
 version = "0.1.0"
 edition = "2021"
