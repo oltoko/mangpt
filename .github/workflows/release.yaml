@@ -134,3 +134,16 @@ jobs:
       run: |
         version="${{ needs.create-release.outputs.version }}"
         gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
+
+  publish:
+    name: Publish to crates.io
+    needs: build-release
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Publish
+        run: "cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}"
