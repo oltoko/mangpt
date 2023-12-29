@@ -37,7 +37,7 @@ impl Tool {
     }
 
     #[cfg(target_os = "windows")]
-    pub fn fetch_man_page(&self) -> Result<&str, Box<dyn Error>> {
+    pub fn fetch_man_page(&self) -> Result<String, Box<dyn Error>> {
         self.try_to_fetch_help()
     }
 
