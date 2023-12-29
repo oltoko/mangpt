@@ -1,0 +1,98 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+name: Check and Lint
+
+jobs:
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt
+          override: true
+
+      - name: Check formatting
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: clippy
+          override: true
+
+      - name: Linting
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
+          name: Clippy Output
+
+  check:
+    name: Check & Test
+    needs:
+      - fmt
+      - clippy
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        build: [linux, macos, windows]
+        include:
+          - build: linux
+            os: ubuntu-latest
+          - build: macos
+            os: macos-latest
+          - build: windows
+            os: windows-latest
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Install Build Dependencies (Linux)
+        run: "sudo apt -y install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev"
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Execute Check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+
+      - name: Run Tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
