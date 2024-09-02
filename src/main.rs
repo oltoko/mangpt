@@ -28,6 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     chatgpt::fetch_answer(config, tool, question).await?;
+    println!();
 
     Ok(())
 }
