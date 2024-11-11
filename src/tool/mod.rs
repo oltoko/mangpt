@@ -54,7 +54,7 @@ impl Tool {
 
     #[cfg(unix)]
     fn try_to_fetch_man_page(&self) -> Result<String, Box<dyn Error>> {
-        match Command::new("man").arg("-f").arg(&self.name).output() {
+        match Command::new("man").arg(&self.name).output() {
             Ok(output) if output.status.success() => {
                 let help = str::from_utf8(&output.stdout)?.trim();
                 Ok(String::from(help))
