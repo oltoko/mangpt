@@ -43,18 +43,18 @@ jobs:
       - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create $VERSION --draft --verify-tag --title $VERSION
+        run: gh release create $VERSION --generate-notes --draft --verify-tag --title $VERSION
 
     outputs:
       version: ${{ env.VERSION }}
 
   build-release:
     name: Build Release
-    needs: [create-release]
+    needs: [ create-release ]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [linux, macos, windows]
+        build: [ linux, macos, windows ]
         include:
           - build: linux
             os: ubuntu-latest
@@ -68,72 +68,72 @@ jobs:
     
     steps:
 
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Build
-      shell: bash
-      run: |
-        cargo build --release --verbose
+      - name: Build
+        shell: bash
+        run: |
+          cargo build --release --verbose
 
-    - name: Determine binary name (Windows)
-      shell: bash
-      if: matrix.os == 'windows-latest'
-      run: |
-        bin="target/release/mangpt.exe"
-        echo "BIN=$bin" >> $GITHUB_ENV
+      - name: Determine binary name (Windows)
+        shell: bash
+        if: matrix.os == 'windows-latest'
+        run: |
+          bin="target/release/mangpt.exe"
+          echo "BIN=$bin" >> $GITHUB_ENV
 
-    - name: Determine binary name (Unix)
-      shell: bash
-      if: matrix.os != 'windows-latest'
-      run: |
-        bin="target/release/mangpt"
-        echo "BIN=$bin" >> $GITHUB_ENV
+      - name: Determine binary name (Unix)
+        shell: bash
+        if: matrix.os != 'windows-latest'
+        run: |
+          bin="target/release/mangpt"
+          echo "BIN=$bin" >> $GITHUB_ENV
 
-    - name: Strip release binary (macOS or Linux)
-      shell: bash
-      if: matrix.os != 'windows-latest'
-      run: |
-        strip "$BIN"
+      - name: Strip release binary (macOS or Linux)
+        shell: bash
+        if: matrix.os != 'windows-latest'
+        run: |
+          strip "$BIN"
 
-    - name: Determine archive name
-      shell: bash
-      run: |
-        version="${{ needs.create-release.outputs.version }}"
-        echo "ARCHIVE=mangpt-$version-${{ matrix.build }}" >> $GITHUB_ENV
+      - name: Determine archive name
+        shell: bash
+        run: |
+          version="${{ needs.create-release.outputs.version }}"
+          echo "ARCHIVE=mangpt-$version-${{ matrix.build }}" >> $GITHUB_ENV
 
-    - name: Creating directory for archive
-      shell: bash
-      run: |
-        mkdir -p "$ARCHIVE"/
-        cp "$BIN" "$ARCHIVE"/
-        cp {README.md,LICENSE} "$ARCHIVE"/
+      - name: Creating directory for archive
+        shell: bash
+        run: |
+          mkdir -p "$ARCHIVE"/
+          cp "$BIN" "$ARCHIVE"/
+          cp {README.md,LICENSE} "$ARCHIVE"/
 
-    - name: Build archive (Windows)
-      shell: bash
-      if: matrix.os == 'windows-latest'
-      run: |
-        7z a "$ARCHIVE.zip" "$ARCHIVE"
-        certutil -hashfile "$ARCHIVE.zip" SHA256 > "$ARCHIVE.zip.sha256"
-        echo "ASSET=$ARCHIVE.zip" >> $GITHUB_ENV
-        echo "ASSET_SUM=$ARCHIVE.zip.sha256" >> $GITHUB_ENV
+      - name: Build archive (Windows)
+        shell: bash
+        if: matrix.os == 'windows-latest'
+        run: |
+          7z a "$ARCHIVE.zip" "$ARCHIVE"
+          certutil -hashfile "$ARCHIVE.zip" SHA256 > "$ARCHIVE.zip.sha256"
+          echo "ASSET=$ARCHIVE.zip" >> $GITHUB_ENV
+          echo "ASSET_SUM=$ARCHIVE.zip.sha256" >> $GITHUB_ENV
 
-    - name: Build archive (Unix)
-      shell: bash
-      if: matrix.os != 'windows-latest'
-      run: |
-        tar czf "$ARCHIVE.tar.gz" "$ARCHIVE"
-        shasum -a 256 "$ARCHIVE.tar.gz" > "$ARCHIVE.tar.gz.sha256"
-        echo "ASSET=$ARCHIVE.tar.gz" >> $GITHUB_ENV
-        echo "ASSET_SUM=$ARCHIVE.tar.gz.sha256" >> $GITHUB_ENV
+      - name: Build archive (Unix)
+        shell: bash
+        if: matrix.os != 'windows-latest'
+        run: |
+          tar czf "$ARCHIVE.tar.gz" "$ARCHIVE"
+          shasum -a 256 "$ARCHIVE.tar.gz" > "$ARCHIVE.tar.gz.sha256"
+          echo "ASSET=$ARCHIVE.tar.gz" >> $GITHUB_ENV
+          echo "ASSET_SUM=$ARCHIVE.tar.gz.sha256" >> $GITHUB_ENV
 
-    - name: Upload release archive
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      shell: bash
-      run: |
-        version="${{ needs.create-release.outputs.version }}"
-        gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
+      - name: Upload release archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          version="${{ needs.create-release.outputs.version }}"
+          gh release upload "$version" ${{ env.ASSET }} ${{ env.ASSET_SUM }}
 
   publish:
     name: Publish to crates.io
@@ -144,6 +144,6 @@ jobs:
 
       - name: Checkout Code
         uses: actions/checkout@v4
-      
+
       - name: Publish
         run: "cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}"
