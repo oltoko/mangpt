@@ -8,24 +8,35 @@ pub mod tool;
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Name of the executable to explain
-    name: String,
+    name: Option<String>,
 
     /// What do you want to do with the executable
     #[arg(short, long)]
     question: Option<String>,
+
+    /// Show the full path to the config file
+    #[arg(short, long)]
+    show_config_path: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    let config = config::load()?;
-    let tool = tool::find_for(&args.name)?;
+    if args.show_config_path {
+        println!("{}", config::config_file_path()?.display());
+        return Ok(());
+    }
 
-    let question = match args.question {
-        Some(parsed_question) => parsed_question,
-        None => String::from("Give me a quick summary about this tool."),
-    };
+    let name = args
+        .name
+        .unwrap_or_else(|| panic!("Please provide the name of the executable"));
+    let config = config::load()?;
+    let tool = tool::find_for(&name)?;
+
+    let question = args
+        .question
+        .unwrap_or_else(|| String::from("Give me a quick summary about this tool."));
 
     chatgpt::fetch_answer(config, tool, question).await?;
     println!();
