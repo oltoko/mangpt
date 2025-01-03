@@ -22,7 +22,7 @@ pub fn load() -> Result<ManGPTConfig, Box<dyn std::error::Error>> {
     }
 
     let content = fs::read_to_string(config_file_path)?;
-    let config: ManGPTConfig = serde_yaml::from_str(&content)?;
+    let config: ManGPTConfig = serde_yml::from_str(&content)?;
 
     Ok(config)
 }
@@ -41,7 +41,7 @@ fn create_config_file(
         max_tokens: DEFAULT_MAX_TOKENS,
     };
 
-    let config = serde_yaml::to_string(&config)?;
+    let config = serde_yml::to_string(&config)?;
     fs::write(config_file_path, config)?;
     println!("Written config file {}", config_file_path.display());
 
