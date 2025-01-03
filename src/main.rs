@@ -28,9 +28,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let name = args
-        .name
-        .unwrap_or_else(|| panic!("Please provide the name of the executable"));
+    if args.name.is_none() {
+        return Err("Please provide the name of the executable".into());
+    }
+
+    let name = args.name.unwrap();
     let config = config::load()?;
     let tool = tool::find_for(&name)?;
 
