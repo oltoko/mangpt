@@ -6,13 +6,14 @@ CLI program to ask ChatGPT how to use other CLI programs
 ```sh
 CLI program to ask ChatGPT how to use other CLI programs
 
-Usage: mangpt [OPTIONS] <NAME>
+Usage: mangpt [OPTIONS] [NAME]
 
 Arguments:
-  <NAME>  Name of the executable to explain
+  [NAME]  Name of the executable to explain
 
 Options:
   -q, --question <QUESTION>  What do you want to do with the executable
+  -s, --show-config-path     Show the full path to the config file
   -h, --help                 Print help
   -V, --version              Print version
 ```
