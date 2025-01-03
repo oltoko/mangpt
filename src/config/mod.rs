@@ -1,6 +1,7 @@
 use rpassword;
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ManGPTConfig {
@@ -13,9 +14,13 @@ const FILE_NAME: &str = "mangpt-config.yml";
 const DEFAULT_MODEL: &str = "gpt-4o-mini";
 const DEFAULT_MAX_TOKENS: u16 = 1024u16;
 
-pub fn load() -> Result<ManGPTConfig, Box<dyn std::error::Error>> {
+pub fn config_file_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let config_dir = dirs::config_local_dir().ok_or("Can't find config directory")?;
-    let config_file_path = config_dir.join(FILE_NAME);
+    Ok(config_dir.join(FILE_NAME))
+}
+
+pub fn load() -> Result<ManGPTConfig, Box<dyn std::error::Error>> {
+    let config_file_path = config_file_path()?;
 
     if !config_file_path.exists() {
         create_config_file(&config_file_path)?;
