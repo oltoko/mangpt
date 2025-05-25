@@ -19,4 +19,4 @@ futures = "0.3"
 rpassword = "7.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_yml = "0.0.12"
-tokio = { version = "1.44", features = ["full"] }
+tokio = { version = "1.45", features = ["full"] }
