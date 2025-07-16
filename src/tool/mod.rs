@@ -46,7 +46,7 @@ impl Tool {
         match self.try_to_fetch_man_page() {
             Ok(man_page) => Ok(man_page),
             Err(error) => {
-                eprintln!("{}... fall back to --help...", error);
+                eprintln!("{error}... fall back to --help...");
                 self.try_to_fetch_help()
             }
         }

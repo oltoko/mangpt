@@ -52,7 +52,7 @@ pub async fn fetch_answer(
             Ok(response) => {
                 response.choices.iter().for_each(|chat_choice| {
                     if let Some(ref content) = chat_choice.delta.content {
-                        write!(lock, "{}", content).unwrap();
+                        write!(lock, "{content}").unwrap();
                     }
                 });
             }
@@ -73,9 +73,8 @@ fn create_system_message(
     You are giving precise and short answers to help the user as fast as possible to reach his goal. Your answer should always contain an example.
     Following the Man-Page/Help of the Tool you should give answers to:
     ---
-    {}
-    ---
-    ", man_page_content);
+    {man_page_content}
+    ---");
 
     ChatCompletionRequestSystemMessageArgs::default()
         .content(content)
