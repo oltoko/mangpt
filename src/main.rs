@@ -7,8 +7,9 @@ pub mod tool;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Name of the executable to explain
-    name: Option<String>,
+    /// Name of the executable to explain. If you are interested in subcommands
+    /// then it works if the have a separate man page like `git-lfs`
+    name: Vec<String>,
 
     /// What do you want to do with the executable
     #[arg(short, long)]
@@ -28,11 +29,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    if args.name.is_none() {
+    if args.name.is_empty() {
         return Err("Please provide the name of the executable".into());
     }
 
-    let name = args.name.unwrap();
+    let name = args.name.join("-");
     let config = config::load()?;
     let tool = tool::find_for(&name)?;
 
