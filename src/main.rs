@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     if args.show_config_path {
-        println!("{}", config::config_file_path()?.display());
+        print!("{}", config::config_file_path()?.display());
         return Ok(());
     }
 
