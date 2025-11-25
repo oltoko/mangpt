@@ -11,7 +11,7 @@ pub struct ManGPTConfig {
 }
 
 const FILE_NAME: &str = "mangpt-config.yml";
-const DEFAULT_MODEL: &str = "gpt-4o-mini";
+const DEFAULT_MODEL: &str = "gpt-5-mini";
 const DEFAULT_MAX_TOKENS: u16 = 1024u16;
 
 pub fn config_file_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
